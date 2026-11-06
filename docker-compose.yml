@@ -1,0 +1,41 @@
+# Local stack: MongoDB + API + web (NGINX).  Run: docker compose up --build
+# Then seed:      docker compose exec server npm run seed   (needs NODE_ENV!=production, see below)
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build: ./server
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      # NODE_ENV=development so cookies work over plain http://localhost and the seed adds demo data.
+      # Never use these values in real deployments.
+      NODE_ENV: development
+      PORT: 5000
+      MONGODB_URI: mongodb://mongo:27017/brighttrack
+      JWT_SECRET: ${JWT_SECRET:-local-docker-only-secret-change-me-0123456789}
+      CLIENT_ORIGIN: http://localhost:8080
+      SEED_ADMIN_EMAIL: admin@brighttrack.local
+      SEED_ADMIN_PASSWORD: ChangeMe123!
+
+  web:
+    build: ./client
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - "8080:80"
+
+volumes:
+  mongo-data:

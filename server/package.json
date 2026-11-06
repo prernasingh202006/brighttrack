@@ -1,0 +1,43 @@
+{
+  "name": "brighttrack-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BrightTrack API - streetlight complaint reporting and repair tracking",
+  "main": "src/server.js",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "build": "echo \"API has no build step\"",
+    "test": "jest --runInBand --forceExit",
+    "lint": "eslint src tests",
+    "seed": "node src/scripts/seed.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.5.0",
+    "pino": "^9.4.0",
+    "pino-http": "^10.3.0",
+    "xss": "^1.0.15",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "mongodb-memory-server": "^10.0.0",
+    "nodemon": "^3.1.4",
+    "supertest": "^7.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "setupFiles": ["<rootDir>/tests/setupEnv.js"],
+    "testTimeout": 60000
+  }
+}
