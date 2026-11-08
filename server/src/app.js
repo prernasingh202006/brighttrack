@@ -14,7 +14,7 @@ const routes = require('./routes');
 
 function createApp() {
   const app = express();
-  app.set('trust proxy', 1); // behind Render/NGINX: correct client IP for rate limiting
+  app.set('trust proxy', env.TRUST_PROXY_HOPS); // behind Render/Vercel/NGINX: correct client IP for rate limiting
   app.disable('x-powered-by');
 
   app.use(helmet());

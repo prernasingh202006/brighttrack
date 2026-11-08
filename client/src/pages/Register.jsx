@@ -25,9 +25,12 @@ export default function Register() {
     setErrors({});
     setBusy(true);
     try {
-      await register({ ...values });
-      toast.success('Account created. You are logged in.');
-      navigate('/report', { replace: true });
+      const sent = await register({ ...values });
+      toast.success('We sent a 6-digit code to your email');
+      navigate('/verify-email', {
+        replace: true,
+        state: { email: sent.email, expiresInMinutes: sent.expiresInMinutes, resendAfterSeconds: sent.resendAfterSeconds },
+      });
     } catch (err) {
       setErrors(fieldErrors(err));
       setFormError(errorMessage(err));
@@ -57,9 +60,12 @@ export default function Register() {
         <Field id="confirmPassword" label="Confirm password" error={errors.confirmPassword}>
           {(p) => <input {...p} type="password" autoComplete="new-password" value={values.confirmPassword} onChange={set('confirmPassword')} />}
         </Field>
-        <button type="submit" disabled={busy} className="btn-primary w-full">{busy ? 'Creating account…' : 'Sign up'}</button>
+        <button type="submit" disabled={busy} className="btn-primary w-full">{busy ? 'Sending code…' : 'Sign up'}</button>
+        <p className="muted text-center text-xs">We will email you a 6-digit code to confirm that this address is really yours.</p>
         <p className="muted text-center text-sm">
           Already registered? <Link to="/login" className="font-bold underline">Log in</Link>
+          {' · '}
+          <Link to="/verify-email" className="font-bold underline">I have a code</Link>
         </p>
       </form>
     </div>

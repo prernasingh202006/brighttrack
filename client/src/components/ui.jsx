@@ -1,6 +1,7 @@
 // Small shared UI pieces: Spinner, EmptyState, Field, StatusBadge, CopyButton, Modal.
 import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
+import { formatDate } from '../lib/format';
 
 export function Spinner({ label = 'Loading' }) {
   return (
@@ -79,6 +80,18 @@ export function StatusBadge({ status }) {
       <span aria-hidden="true">{s.icon}</span>
       {status}
     </span>
+  );
+}
+
+/** Shown to residents (and on the public tracking page) when a complaint is Resolved: proof of what was done. */
+export function ResolutionBox({ note, at }) {
+  if (!note) return null;
+  return (
+    <div className="rounded-lg bg-green-100 p-4 text-sm dark:bg-green-400/15">
+      <h3 className="mb-1 font-bold text-green-900 dark:text-green-300">✓ What was done</h3>
+      <p className="text-green-950 dark:text-green-100">{note}</p>
+      {at && <p className="mt-1 text-xs text-green-900/80 dark:text-green-300/80">Fixed on {formatDate(at)}</p>}
+    </div>
   );
 }
 

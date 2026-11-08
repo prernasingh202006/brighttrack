@@ -22,10 +22,22 @@ export function AuthProvider({ children }) {
     return r.data.data.user;
   }, []);
 
+  // Sign-up does NOT log anyone in: it creates an unverified account and emails a 6-digit code.
   const register = useCallback(async (values) => {
     const r = await api.post('/auth/register', values);
+    return r.data.data; // { needsVerification, email, expiresInMinutes, resendAfterSeconds }
+  }, []);
+
+  // Entering the right code verifies the email and starts the session.
+  const verifyEmail = useCallback(async ({ email, code }) => {
+    const r = await api.post('/auth/verify-email', { email, code });
     setUser(r.data.data.user);
     return r.data.data.user;
+  }, []);
+
+  const resendCode = useCallback(async (email) => {
+    const r = await api.post('/auth/resend-code', { email });
+    return r.data.data; // { message, resendAfterSeconds }
   }, []);
 
   const logout = useCallback(async () => {
@@ -33,7 +45,10 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
-  const value = useMemo(() => ({ user, loading, login, register, logout }), [user, loading, login, register, logout]);
+  const value = useMemo(
+    () => ({ user, loading, login, register, verifyEmail, resendCode, logout }),
+    [user, loading, login, register, verifyEmail, resendCode, logout]
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

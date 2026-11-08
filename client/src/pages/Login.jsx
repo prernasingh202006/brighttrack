@@ -7,7 +7,7 @@ import { loginSchema, parse } from '../lib/schemas';
 import { Field } from '../components/ui';
 
 export default function Login() {
-  const { user, login } = useAuth();
+  const { user, login, resendCode } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [values, setValues] = useState({ email: '', password: '' });
@@ -30,6 +30,14 @@ export default function Login() {
       toast.success(`Welcome back, ${u.name.split(' ')[0]}`);
       navigate(location.state?.from || (u.role === 'admin' ? '/admin' : '/my-complaints'), { replace: true });
     } catch (err) {
+      if (err?.response?.data?.error?.code === 'EMAIL_NOT_VERIFIED') {
+        // Right password, but the email was never confirmed: send a fresh code and go to the code screen.
+        // (If a code was sent a moment ago the server says "wait"; the earlier code still works, so that is fine.)
+        await resendCode(r.data.email).catch(() => {});
+        toast('Please confirm your email first. Enter the code we sent you.');
+        navigate('/verify-email', { replace: true, state: { email: r.data.email, fromLogin: true, resendAfterSeconds: 60 } });
+        return;
+      }
       setErrors(fieldErrors(err));
       setFormError(errorMessage(err));
       toast.error(errorMessage(err));

@@ -41,7 +41,8 @@ export default function Layout() {
       <NavLink to="/track" className={linkCls} onClick={() => setOpen(false)}>Track a complaint</NavLink>
       {user && <NavLink to="/report" className={linkCls} onClick={() => setOpen(false)}>Report a fault</NavLink>}
       {user && <NavLink to="/my-complaints" className={linkCls} onClick={() => setOpen(false)}>My complaints</NavLink>}
-      {user?.role === 'admin' && <NavLink to="/admin" className={linkCls} onClick={() => setOpen(false)}>Admin</NavLink>}
+      {user?.role === 'admin' && <NavLink to="/admin" end className={linkCls} onClick={() => setOpen(false)}>Admin</NavLink>}
+      {user?.role === 'admin' && <NavLink to="/admin/technicians" className={linkCls} onClick={() => setOpen(false)}>Technicians</NavLink>}
     </>
   );
 

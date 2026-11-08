@@ -3,18 +3,25 @@ const ApiError = require('../utils/ApiError');
 const asyncHandler = require('../utils/asyncHandler');
 const { generateComplaintId } = require('../utils/helpers');
 const events = require('../utils/notifier');
+const geocode = require('../utils/geocode');
 
 // ---- Serialisers: decide exactly which fields each audience may see ----
 const historyPublic = (h) => h.map(({ status, at }) => ({ status, at }));
+const imagesView = (images = []) => images.map((i) => ({ id: i._id, contentType: i.contentType, size: i.size }));
 
 const ownerView = (c) => ({
   complaintId: c.complaintId,
   location: c.location,
+  coords: c.coords && Number.isFinite(c.coords.lat) ? { lat: c.coords.lat, lng: c.coords.lng } : undefined,
   pole: c.pole,
   type: c.type,
   description: c.description,
   unsafe: c.unsafe,
+  images: imagesView(c.images), // photos are private: only the resident and admins can open them
   status: c.status,
+  assignedTo: c.assignedTo, // the resident may see who is handling their complaint
+  resolutionNote: c.resolutionNote,
+  resolvedAt: c.resolvedAt,
   history: historyPublic(c.history),
   createdAt: c.createdAt,
   updatedAt: c.updatedAt,
@@ -25,13 +32,27 @@ const publicView = (c) => ({
   location: c.location,
   type: c.type,
   status: c.status,
+  // What was done is public so anyone holding the ID can see the fault was really fixed.
+  // The technician's name is NOT public.
+  resolutionNote: c.resolutionNote,
+  resolvedAt: c.resolvedAt,
   history: historyPublic(c.history),
   createdAt: c.createdAt,
   updatedAt: c.updatedAt,
 });
 
 exports.create = asyncHandler(async (req, res) => {
-  const { location, pole, type, description, unsafe } = req.body;
+  const { locationToken, pole, type, description, unsafe } = req.body;
+  // The address and coordinates come from the server-signed token, never from client-typed text.
+  const verified = geocode.verifyLocation(locationToken);
+  if (verified.error) {
+    const message =
+      verified.error === 'expired'
+        ? 'Your selected location has expired. Please search for it again.'
+        : 'Choose a real location from the search results.';
+    throw new ApiError(400, message, { code: 'VALIDATION_ERROR', details: [{ field: 'locationToken', message }] });
+  }
+  const { label, lat, lng } = verified.location;
   let complaint;
   for (let attempt = 0; attempt < 5 && !complaint; attempt += 1) {
     try {
@@ -39,7 +60,8 @@ exports.create = asyncHandler(async (req, res) => {
       complaint = await Complaint.create({
         complaintId: generateComplaintId(),
         user: req.user._id,
-        location,
+        location: label,
+        coords: { lat, lng },
         pole,
         type,
         description,

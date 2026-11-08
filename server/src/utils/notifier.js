@@ -7,6 +7,9 @@ const logger = require('./logger');
 const events = new EventEmitter();
 
 events.on('complaint.created', (c) => logger.info({ complaintId: c.complaintId }, 'complaint created'));
+events.on('complaint.assigned', (c, previous) =>
+  logger.info({ complaintId: c.complaintId, assignedTo: c.assignedTo, previous }, 'complaint assigned')
+);
 events.on('complaint.statusChanged', (c, from, to) =>
   logger.info({ complaintId: c.complaintId, from, to }, 'complaint status changed')
 );

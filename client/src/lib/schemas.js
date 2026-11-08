@@ -17,12 +17,36 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+export const verifyCodeSchema = z.object({
+  email: z.string().trim().email('Enter a valid email address'),
+  code: z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code from your email'),
+});
+
+// The location is not free text: it is a token the server signs for a place found through the address search.
 export const complaintSchema = z.object({
-  location: z.string().trim().min(3, 'Location must be at least 3 characters').max(120),
+  locationToken: z
+    .string({ required_error: 'Search for the place and choose it from the list', invalid_type_error: 'Search for the place and choose it from the list' })
+    .trim()
+    .min(1, 'Search for the place and choose it from the list'),
   pole: z.string().trim().max(30).optional(),
   type: z.enum(COMPLAINT_TYPES, { errorMap: () => ({ message: 'Choose a problem type' }) }),
   description: z.string().trim().min(10, 'Describe the problem in at least 10 characters').max(400, 'Keep it under 400 characters'),
   unsafe: z.boolean(),
+});
+
+// Admin workflow: choose a technician from the managed list, then resolve with a note saying what was fixed.
+export const assignSchema = z.object({
+  technicianId: z.string({ required_error: 'Choose a technician from the list' }).trim().regex(/^[a-f0-9]{24}$/i, 'Choose a technician from the list'),
+});
+
+export const technicianSchema = z.object({
+  name: z.string().trim().min(2, 'Name must be at least 2 characters').max(60, 'Name must be at most 60 characters'),
+  phone: z.string().trim().regex(/^(\d{10})?$/, 'Phone must be exactly 10 digits'),
+  area: z.string().trim().max(60, 'Area must be at most 60 characters'),
+});
+
+export const resolveSchema = z.object({
+  resolutionNote: z.string().trim().min(10, 'Describe what was fixed (at least 10 characters)').max(500, 'Keep it under 500 characters'),
 });
 
 export const complaintIdSchema = z

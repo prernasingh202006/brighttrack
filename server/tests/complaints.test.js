@@ -1,4 +1,5 @@
-const { startDb, stopDb, clearDb, agent, validComplaint, registeredAgent } = require('./helpers');
+const { startDb, stopDb, clearDb, agent, validComplaint, place, registeredAgent } = require('./helpers');
+const { signLocation } = require('../src/utils/geocode');
 
 beforeAll(startDb);
 afterAll(stopDb);
@@ -22,7 +23,9 @@ describe('complaint creation', () => {
   });
 
   test.each([
-    ['missing location', { location: '' }],
+    ['missing location', { locationToken: '' }],
+    ['typed-in location instead of a verified one', { locationToken: 'Some street I made up' }],
+    ['a location token with a forged signature', { locationToken: `${signLocation(place('Real Place')).split('.')[0]}.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` }],
     ['short description', { description: 'too short' }],
     ['long description', { description: 'x'.repeat(401) }],
     ['bad type', { type: 'Broken glass' }],
@@ -30,6 +33,30 @@ describe('complaint creation', () => {
     const a = await registeredAgent();
     const res = await a.post('/api/complaints').send(validComplaint(over));
     expect(res.status).toBe(400);
+  });
+
+  test('the location is taken from the signed token: typed text is ignored and coordinates are stored', async () => {
+    const a = await registeredAgent();
+    const res = await a
+      .post('/api/complaints')
+      .send({ ...validComplaint({ place: place('Linking Road, Bandra West, Mumbai', 19.0654, 72.8353) }), location: 'Totally Fake Place', coords: { lat: 1, lng: 1 } });
+    expect(res.status).toBe(201);
+    const c = res.body.data.complaint;
+    expect(c.location).toBe('Linking Road, Bandra West, Mumbai');
+    expect(c.coords).toEqual({ lat: 19.0654, lng: 72.8353 });
+    expect(c.images).toEqual([]);
+    // the public tracking page shows the place name but never the exact coordinates
+    const pub = await agent().get(`/api/complaints/track/${c.complaintId}`);
+    expect(pub.body.data.complaint.location).toBe('Linking Road, Bandra West, Mumbai');
+    expect(JSON.stringify(pub.body)).not.toMatch(/19\.0654|72\.8353|coords|images/);
+  });
+
+  test('an expired location token is refused with a message that names the location field', async () => {
+    const a = await registeredAgent();
+    const res = await a.post('/api/complaints').send(validComplaint({ locationToken: signLocation(place(), -1000) }));
+    expect(res.status).toBe(400);
+    expect(res.body.error.details[0]).toMatchObject({ field: 'locationToken' });
+    expect(res.body.error.message).toMatch(/expired/i);
   });
 
   test('client cannot set status, user or complaintId', async () => {
@@ -44,9 +71,11 @@ describe('complaint creation', () => {
 
   test('strips HTML from text fields (XSS)', async () => {
     const a = await registeredAgent();
-    const res = await a.post('/api/complaints').send(validComplaint({ location: 'Main St <script>alert(1)</script>' }));
+    const res = await a.post('/api/complaints').send(validComplaint({ place: place('Main St <script>alert(1)</script>') }));
     expect(res.status).toBe(201);
     expect(res.body.data.complaint.location).not.toMatch(/<|script/i);
+    const bad = await a.post('/api/complaints').send(validComplaint({ pole: '<img src=x onerror=alert(1)>' }));
+    expect(bad.body.data.complaint.pole || '').not.toMatch(/<|onerror/i);
   });
 });
 
@@ -86,7 +115,7 @@ describe('public endpoints', () => {
 describe('ownership', () => {
   test('a resident only lists their own complaints and cannot read another user\'s', async () => {
     const alice = await registeredAgent();
-    const bob = await registeredAgent({ email: 'bob@example.com', name: 'Bob Kumar' });
+    const bob = await registeredAgent({ email: 'bob@gmail.com', name: 'Bob Kumar' });
     const { body } = await alice.post('/api/complaints').send(validComplaint());
     const id = body.data.complaint.complaintId;
 

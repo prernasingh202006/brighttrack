@@ -26,6 +26,9 @@ services:
       MONGODB_URI: mongodb://mongo:27017/brighttrack
       JWT_SECRET: ${JWT_SECRET:-local-docker-only-secret-change-me-0123456789}
       CLIENT_ORIGIN: http://localhost:8080
+      # Sign-up codes are printed in the server log (docker compose logs -f server) instead of emailed.
+      MAIL_PROVIDER: console
+      GEO_CONTACT: ${GEO_CONTACT:-you@example.com}
       SEED_ADMIN_EMAIL: admin@brighttrack.local
       SEED_ADMIN_PASSWORD: ChangeMe123!
 

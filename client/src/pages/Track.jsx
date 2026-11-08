@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { api, errorMessage } from '../lib/api';
 import { complaintIdSchema, parse } from '../lib/schemas';
 import { formatDate } from '../lib/format';
-import { Field, Spinner, StatusBadge } from '../components/ui';
+import { Field, ResolutionBox, Spinner, StatusBadge } from '../components/ui';
 import { ProgressTracker, Timeline } from '../components/Lamps';
 
 export default function Track() {
@@ -67,6 +67,7 @@ export default function Track() {
             <StatusBadge status={c.status} />
           </div>
           <ProgressTracker status={c.status} />
+          {c.status === 'Resolved' && <ResolutionBox note={c.resolutionNote} at={c.resolvedAt} />}
           <div>
             <h2 className="mb-3 text-lg font-bold">History</h2>
             <Timeline history={c.history} />

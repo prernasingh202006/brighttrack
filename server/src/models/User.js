@@ -9,7 +9,19 @@ const userSchema = new mongoose.Schema({
   passwordHash: { type: String, required: true, select: false },
   role: { type: String, enum: ROLES, default: 'resident' },
   createdAt: { type: Date, default: Date.now },
+
+  // Email verification. `emailVerified` has NO default on purpose: accounts created before this
+  // feature (field missing) count as verified; sign-up sets it to false explicitly.
+  emailVerified: { type: Boolean },
+  verifyCodeHash: { type: String, select: false }, // HMAC of the 6-digit code, never the code itself
+  verifyExpiresAt: { type: Date, select: false },
+  verifyAttempts: { type: Number, select: false },
+  verifySentAt: { type: Date, select: false },
+  // Unverified accounts delete themselves (TTL index) so nobody can squat on someone else's email.
+  unverifiedExpiresAt: { type: Date },
 });
+
+userSchema.index({ unverifiedExpiresAt: 1 }, { expireAfterSeconds: 0 });
 
 userSchema.statics.hashPassword = (plain) => bcrypt.hash(plain, 12);
 userSchema.methods.comparePassword = function comparePassword(plain) {
@@ -19,6 +31,11 @@ userSchema.methods.comparePassword = function comparePassword(plain) {
 userSchema.set('toJSON', {
   transform: (_doc, ret) => {
     delete ret.passwordHash;
+    delete ret.verifyCodeHash;
+    delete ret.verifyExpiresAt;
+    delete ret.verifyAttempts;
+    delete ret.verifySentAt;
+    delete ret.unverifiedExpiresAt;
     delete ret.__v;
     return ret;
   },

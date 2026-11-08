@@ -61,7 +61,7 @@ export function ProgressTracker({ status }) {
   );
 }
 
-/** Vertical status history. Admin view passes entries with changedBy.name. */
+/** Vertical status history. Admin view passes entries with changedBy.name and an optional note (residents never receive notes). */
 export function Timeline({ history = [] }) {
   const items = [...history].reverse();
   return (
@@ -74,6 +74,7 @@ export function Timeline({ history = [] }) {
             {formatDateTime(h.at)}
             {h.changedBy?.name ? ` · ${h.changedBy.name}` : ''}
           </p>
+          {h.note && <p className="mt-0.5 text-xs">{h.note}</p>}
         </li>
       ))}
     </ol>

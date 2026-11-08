@@ -9,4 +9,8 @@ const COMPLAINT_TYPES = [
 ];
 const ROLES = ['resident', 'admin'];
 
-module.exports = { STATUSES, COMPLAINT_TYPES, ROLES };
+// Complaint photos
+const MAX_IMAGES = 3;
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+
+module.exports = { STATUSES, COMPLAINT_TYPES, ROLES, MAX_IMAGES, MAX_IMAGE_BYTES };
